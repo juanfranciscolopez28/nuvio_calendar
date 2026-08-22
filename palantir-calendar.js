@@ -71,7 +71,18 @@ class PalantirCalendarCard extends HTMLElement {
             background: var(--cell-hover);
           }
           .day-cell.other-month {
-            opacity: 0.3;
+            background: #090c10;
+          }
+          .day-cell.other-month .date-num {
+            opacity: 0.4;
+          }
+          .day-cell.other-month .event-poster {
+            opacity: 0.5;
+            filter: grayscale(60%);
+          }
+          .day-cell.other-month .event-poster:hover {
+            opacity: 1;
+            filter: grayscale(0%);
           }
           .day-cell.today .date-num {
             background: var(--accent-history);
@@ -109,6 +120,23 @@ class PalantirCalendarCard extends HTMLElement {
             transform: scale(1.15) translateY(-2px);
             z-index: 10;
             box-shadow: 0 8px 16px rgba(0,0,0,0.8);
+          }
+          .badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--accent-trakt);
+            color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 15;
           }
           .event-poster.trakt {
             border-bottom: 3px solid var(--accent-trakt);
@@ -226,12 +254,28 @@ class PalantirCalendarCard extends HTMLElement {
       
       const dayEvents = this.eventsData.filter(e => e.timestamp && e.timestamp.startsWith(dateStr));
       
-      let eventsHtml = '<div class="events">';
+      const grouped = {};
       dayEvents.forEach(ev => {
+        let key = ev.uid;
+        if (ev.type === 'show') {
+          key = ev.poster_url || ev.title.split(' - S')[0];
+        }
+        if (!grouped[key]) {
+          grouped[key] = { ...ev, episodes: [ev.title] };
+        } else {
+          grouped[key].episodes.push(ev.title);
+        }
+      });
+      
+      let eventsHtml = '<div class="events">';
+      Object.values(grouped).forEach(ev => {
         const bg = ev.poster_url ? `url(${ev.poster_url})` : '#30363d';
+        const badgeHtml = ev.episodes && ev.episodes.length > 1 ? `<div class="badge">${ev.episodes.length}</div>` : '';
+        const tooltipText = ev.episodes ? ev.episodes.join('<br>') : ev.title;
         eventsHtml += `
           <div class="event-poster ${ev.source}" style="background-image: ${bg}">
-            <div class="tooltip">${ev.title.replace(/"/g, '&quot;')}</div>
+            ${badgeHtml}
+            <div class="tooltip">${tooltipText.replace(/"/g, '&quot;')}</div>
           </div>
         `;
       });
