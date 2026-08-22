@@ -184,12 +184,19 @@ class PalantirCalendarCard extends HTMLElement {
       `;
       this.content = this.querySelector('#calendarGrid');
       this.monthTitle = this.querySelector('#monthTitle');
+      this.lang = hass.language || "es";
       
       this.querySelector('#prevMonth').addEventListener('click', () => this.changeMonth(-1));
       this.querySelector('#nextMonth').addEventListener('click', () => this.changeMonth(1));
 
       this.currentDate = new Date();
       this.eventsData = [];
+      this.fetchData();
+    }
+    
+    // Update language if it changes
+    if (this.lang !== (hass.language || "es")) {
+      this.lang = hass.language || "es";
       this.fetchData();
     }
   }
@@ -206,7 +213,7 @@ class PalantirCalendarCard extends HTMLElement {
 
   async fetchData() {
     try {
-      const res = await fetch(`${this.config.url}/api/calendar/events.json?token=${this.config.token}`);
+      const res = await fetch(`${this.config.url}/api/calendar/events.json?token=${this.config.token}&lang=${this.lang}`);
       if (!res.ok) throw new Error('Error al conectar con Palantir');
       this.eventsData = await res.json();
       this.renderCalendar();
