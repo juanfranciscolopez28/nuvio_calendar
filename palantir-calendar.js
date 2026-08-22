@@ -140,7 +140,7 @@ class PalantirCalendarCard extends HTMLElement {
           }
           .type-badge {
             position: absolute;
-            top: 0;
+            bottom: 0;
             left: 0;
             font-size: 7px;
             font-weight: 700;
@@ -149,7 +149,7 @@ class PalantirCalendarCard extends HTMLElement {
             background: rgba(0,0,0,0.85);
             color: #c9d1d9;
             padding: 2px 4px;
-            border-bottom-right-radius: 4px;
+            border-top-right-radius: 4px;
             z-index: 15;
             backdrop-filter: blur(2px);
           }
