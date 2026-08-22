@@ -140,7 +140,7 @@ class PalantirCalendarCard extends HTMLElement {
           }
           .type-badge {
             position: absolute;
-            bottom: -12px;
+            bottom: -13px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 8px;
@@ -150,12 +150,14 @@ class PalantirCalendarCard extends HTMLElement {
             color: #8b949e;
             z-index: 15;
             white-space: nowrap;
+            padding-bottom: 1px;
           }
-          .event-poster.has-links {
-            border-bottom: 3px solid #2ea043;
+          .event-poster.has-links .type-badge {
+            border-bottom: 2px solid #2ea043;
+            color: #c9d1d9;
           }
           .event-poster.no-links {
-            border-bottom: 0px;
+            /* no border */
           }
           .tooltip {
             position: absolute;
