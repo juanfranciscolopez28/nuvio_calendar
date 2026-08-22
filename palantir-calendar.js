@@ -135,35 +135,26 @@ class PalantirCalendarCard extends HTMLElement {
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            z-index: 15;
-          }
           .type-badge {
             position: absolute;
-            top: 2px;
-            left: 2px;
-            font-size: 10px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 4px;
-            padding: 1px 3px;
+            top: 0;
+            left: 0;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.85);
+            color: #c9d1d9;
+            padding: 2px 4px;
+            border-bottom-right-radius: 4px;
             z-index: 15;
+            backdrop-filter: blur(2px);
           }
-          .link-badge {
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            width: 8px;
-            height: 8px;
-            background: #2ea043;
-            border-radius: 50%;
-            box-shadow: 0 0 5px #2ea043;
-            z-index: 15;
+          .event-poster.has-links {
+            border-bottom: 3px solid #2ea043;
           }
-          .event-poster.trakt {
-            border-bottom: 3px solid var(--accent-trakt);
-          }
-          .event-poster.history {
-            border-bottom: 3px solid var(--accent-history);
+          .event-poster.no-links {
+            border-bottom: 3px solid #ed1c24;
           }
           .tooltip {
             position: absolute;
@@ -464,18 +455,17 @@ class PalantirCalendarCard extends HTMLElement {
         const badgeHtml = ev.episodes && ev.episodes.length > 1 ? `<div class="badge">${ev.episodes.length}</div>` : '';
         const tooltipText = ev.episodes ? ev.episodes.map(e => e.title).join('<br>') : ev.title;
         
-        const typeBadgeHtml = ev.type === 'movie' ? `<div class="type-badge">🎬</div>` : `<div class="type-badge">📺</div>`;
+        const typeBadgeHtml = ev.type === 'movie' ? `<div class="type-badge">PELI</div>` : `<div class="type-badge">SERIE</div>`;
         const groupHasLinks = ev.episodes ? ev.episodes.some(e => e.has_links) : ev.has_links;
-        const linkBadgeHtml = groupHasLinks && ev.source === 'trakt' ? `<div class="link-badge"></div>` : '';
+        const availabilityClass = (groupHasLinks || ev.source === 'history') ? 'has-links' : 'no-links';
         
         // Escape JSON for onclick
         const evJson = JSON.stringify(ev).replace(/"/g, '&quot;');
         
         eventsHtml += `
-          <div class="event-poster ${ev.source}" style="background-image: ${bg}" data-event="${evJson}">
+          <div class="event-poster ${availabilityClass}" style="background-image: ${bg}" data-event="${evJson}">
             ${typeBadgeHtml}
             ${badgeHtml}
-            ${linkBadgeHtml}
             <div class="tooltip">${tooltipText.replace(/"/g, '&quot;')}</div>
           </div>
         `;
