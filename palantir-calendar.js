@@ -154,7 +154,7 @@ class PalantirCalendarCard extends HTMLElement {
             border-bottom: 3px solid #2ea043;
           }
           .event-poster.no-links {
-            border-bottom: 3px solid #ed1c24;
+            border-bottom: 0px;
           }
           .tooltip {
             position: absolute;
