@@ -166,6 +166,34 @@ class PalantirCalendarCard extends HTMLElement {
           .event-poster:hover .tooltip {
             opacity: 1;
           }
+          .tabs-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+          }
+          .tab-btn {
+            background: #21262d;
+            border: 1px solid var(--border-color);
+            color: #c9d1d9;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+          }
+          .tab-btn:hover {
+            background: #30363d;
+          }
+          .tab-btn.active {
+            background: var(--accent-trakt);
+            color: #fff;
+            border-color: var(--accent-trakt);
+          }
+          .tab-btn.active[data-tab="history"] {
+            background: var(--accent-history);
+            border-color: var(--accent-history);
+          }
           .loading {
             padding: 40px;
             text-align: center;
@@ -270,9 +298,13 @@ class PalantirCalendarCard extends HTMLElement {
             border: 1px solid rgba(237, 28, 36, 0.4);
           }
         </style>
+        <div class="tabs-container">
+          <button class="tab-btn active" data-tab="trakt">🎬 Estrenos</button>
+          <button class="tab-btn" data-tab="history">⏳ Mi Historial</button>
+        </div>
         <div class="calendar-header">
           <button class="nav-btn" id="prevMonth">&lt; Ant</button>
-          <h2 id="monthTitle">Cargando...</h2>
+          <div class="month-title" id="monthTitle"></div>
           <button class="nav-btn" id="nextMonth">Sig &gt;</button>
         </div>
         <div class="grid" id="dayNames"></div>
@@ -299,6 +331,16 @@ class PalantirCalendarCard extends HTMLElement {
       this.monthTitle = this.querySelector('#monthTitle');
       this.modal = this.querySelector('#eventModal');
       this.lang = hass.language || "es";
+      this.activeTab = "trakt";
+      
+      this.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          this.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          this.activeTab = e.target.getAttribute('data-tab');
+          this.renderCalendar();
+        });
+      });
       
       this.querySelector('#prevMonth').addEventListener('click', () => this.changeMonth(-1));
       this.querySelector('#nextMonth').addEventListener('click', () => this.changeMonth(1));
@@ -379,7 +421,8 @@ class PalantirCalendarCard extends HTMLElement {
       const dateStr = d.toISOString().split('T')[0];
       const isToday = isCurrentMonth && d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
       
-      const dayEvents = this.eventsData.filter(e => e.timestamp && e.timestamp.startsWith(dateStr));
+      const filteredData = this.eventsData.filter(e => e.source === this.activeTab);
+      const dayEvents = filteredData.filter(e => e.timestamp && e.timestamp.startsWith(dateStr));
       
       const grouped = {};
       dayEvents.forEach(ev => {
@@ -449,9 +492,16 @@ class PalantirCalendarCard extends HTMLElement {
     const eps = ev.episodes || [ev];
     eps.forEach(item => {
         const hasLinks = item.has_links || item.source === 'history';
-        const statusHtml = hasLinks ? 
-            `<span class="item-status status-ok">✅ Disponible</span>` : 
-            `<span class="item-status status-no">❌ Próximamente</span>`;
+        let statusHtml = '';
+        if (item.source === 'history') {
+            statusHtml = `<span class="item-status status-ok">👁️ Visto</span>`;
+        } else if (hasLinks && item.max_quality) {
+            statusHtml = `<span class="item-status status-ok">${item.max_quality}</span>`;
+        } else if (hasLinks) {
+            statusHtml = `<span class="item-status status-ok">✅ Disponible</span>`;
+        } else {
+            statusHtml = `<span class="item-status status-no">❌ Próximamente</span>`;
+        }
             
         listHtml += `
           <li class="modal-item">
