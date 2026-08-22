@@ -171,6 +171,104 @@ class PalantirCalendarCard extends HTMLElement {
             text-align: center;
             color: #8b949e;
           }
+          .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+          }
+          .modal-content {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.8);
+          }
+          .modal-header {
+            display: flex;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(180deg, rgba(22,27,34,1) 0%, rgba(13,17,23,1) 100%);
+          }
+          .modal-poster {
+            width: 100px;
+            height: 150px;
+            border-radius: 6px;
+            background-size: cover;
+            background-position: center;
+            margin-right: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          }
+          .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #fff;
+          }
+          .modal-overview {
+            font-size: 0.85rem;
+            color: #8b949e;
+            line-height: 1.4;
+          }
+          .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            font-size: 1.5rem;
+            cursor: pointer;
+          }
+          .modal-close:hover {
+            color: #fff;
+          }
+          .modal-body {
+            padding: 20px;
+          }
+          .modal-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+          .modal-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .modal-item:last-child {
+            border-bottom: none;
+          }
+          .item-title {
+            font-size: 0.9rem;
+          }
+          .item-status {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+          }
+          .status-ok {
+            background: rgba(35, 134, 54, 0.2);
+            color: #3fb950;
+            border: 1px solid rgba(35, 134, 54, 0.4);
+          }
+          .status-no {
+            background: rgba(237, 28, 36, 0.2);
+            color: #ed1c24;
+            border: 1px solid rgba(237, 28, 36, 0.4);
+          }
         </style>
         <div class="calendar-header">
           <button class="nav-btn" id="prevMonth">&lt; Ant</button>
@@ -181,13 +279,31 @@ class PalantirCalendarCard extends HTMLElement {
         <div class="grid" id="calendarGrid">
           <div class="loading">Sincronizando con Palantir...</div>
         </div>
+        <div id="eventModal" class="modal">
+          <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div class="modal-header">
+              <div class="modal-poster" id="modalPoster"></div>
+              <div>
+                <h3 class="modal-title" id="modalTitle"></h3>
+                <div class="modal-overview" id="modalOverview"></div>
+              </div>
+            </div>
+            <div class="modal-body">
+              <ul class="modal-list" id="modalList"></ul>
+            </div>
+          </div>
+        </div>
       `;
       this.content = this.querySelector('#calendarGrid');
       this.monthTitle = this.querySelector('#monthTitle');
+      this.modal = this.querySelector('#eventModal');
       this.lang = hass.language || "es";
       
       this.querySelector('#prevMonth').addEventListener('click', () => this.changeMonth(-1));
       this.querySelector('#nextMonth').addEventListener('click', () => this.changeMonth(1));
+      this.querySelector('.modal-close').addEventListener('click', () => { this.modal.style.display = 'none'; });
+      this.modal.addEventListener('click', (e) => { if(e.target === this.modal) this.modal.style.display = 'none'; });
 
       this.currentDate = new Date();
       this.eventsData = [];
@@ -268,9 +384,9 @@ class PalantirCalendarCard extends HTMLElement {
           key = ev.poster_url || ev.title.split(' - S')[0];
         }
         if (!grouped[key]) {
-          grouped[key] = { ...ev, episodes: [ev.title] };
+          grouped[key] = { ...ev, episodes: [ev] };
         } else {
-          grouped[key].episodes.push(ev.title);
+          grouped[key].episodes.push(ev);
         }
       });
       
@@ -278,9 +394,13 @@ class PalantirCalendarCard extends HTMLElement {
       Object.values(grouped).forEach(ev => {
         const bg = ev.poster_url ? `url(${ev.poster_url})` : '#30363d';
         const badgeHtml = ev.episodes && ev.episodes.length > 1 ? `<div class="badge">${ev.episodes.length}</div>` : '';
-        const tooltipText = ev.episodes ? ev.episodes.join('<br>') : ev.title;
+        const tooltipText = ev.episodes ? ev.episodes.map(e => e.title).join('<br>') : ev.title;
+        
+        // Escape JSON for onclick
+        const evJson = JSON.stringify(ev).replace(/"/g, '&quot;');
+        
         eventsHtml += `
-          <div class="event-poster ${ev.source}" style="background-image: ${bg}">
+          <div class="event-poster ${ev.source}" style="background-image: ${bg}" data-event="${evJson}">
             ${badgeHtml}
             <div class="tooltip">${tooltipText.replace(/"/g, '&quot;')}</div>
           </div>
@@ -297,6 +417,48 @@ class PalantirCalendarCard extends HTMLElement {
     }
     
     this.content.innerHTML = html;
+    
+    // Add click listeners to posters
+    this.content.querySelectorAll('.event-poster').forEach(el => {
+      el.addEventListener('click', () => {
+        try {
+          const ev = JSON.parse(el.getAttribute('data-event'));
+          this.openModal(ev);
+        } catch (e) {}
+      });
+    });
+  }
+  
+  openModal(ev) {
+    this.querySelector('#modalPoster').style.backgroundImage = ev.poster_url ? `url(${ev.poster_url})` : '#30363d';
+    
+    // Extract generic title for grouped episodes
+    let mainTitle = ev.title;
+    if (ev.type === 'show') {
+       mainTitle = ev.title.split(' - S')[0];
+    }
+    
+    this.querySelector('#modalTitle').innerText = mainTitle;
+    this.querySelector('#modalOverview').innerText = ev.overview || "Sin información adicional.";
+    
+    let listHtml = '';
+    const eps = ev.episodes || [ev];
+    eps.forEach(item => {
+        const hasLinks = item.has_links || item.source === 'history';
+        const statusHtml = hasLinks ? 
+            `<span class="item-status status-ok">✅ Disponible</span>` : 
+            `<span class="item-status status-no">❌ Próximamente</span>`;
+            
+        listHtml += `
+          <li class="modal-item">
+            <span class="item-title">${item.title}</span>
+            ${statusHtml}
+          </li>
+        `;
+    });
+    this.querySelector('#modalList').innerHTML = listHtml;
+    
+    this.modal.style.display = 'flex';
   }
 }
 customElements.define('palantir-calendar-card', PalantirCalendarCard);
