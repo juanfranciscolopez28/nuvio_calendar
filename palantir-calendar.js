@@ -329,7 +329,11 @@ class PalantirCalendarCard extends HTMLElement {
 
   async fetchData() {
     try {
-      const res = await fetch(`${this.config.url}/api/calendar/events.json?token=${this.config.token}&lang=${this.lang}`);
+      let url = `${this.config.url}/api/calendar/events.json?token=${this.config.token}&lang=${this.lang}`;
+      if (this.config.trakt_user) {
+        url += `&trakt_user=${encodeURIComponent(this.config.trakt_user)}`;
+      }
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Error al conectar con Palantir');
       this.eventsData = await res.json();
       this.renderCalendar();
