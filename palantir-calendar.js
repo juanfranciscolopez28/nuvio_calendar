@@ -128,19 +128,21 @@ class PalantirCalendarCard extends HTMLElement {
             background: var(--accent-trakt);
             color: #fff;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 0.75rem;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 25;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
           }
           .type-badge {
             position: absolute;
             top: 0;
             left: 0;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
