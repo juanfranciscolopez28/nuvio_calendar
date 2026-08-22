@@ -135,6 +135,7 @@ class PalantirCalendarCard extends HTMLElement {
             display: flex;
             align-items: center;
             justify-content: center;
+          }
           .type-badge {
             position: absolute;
             top: 0;
