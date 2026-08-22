@@ -312,6 +312,40 @@ class PalantirCalendarCard extends HTMLElement {
             color: #ed1c24;
             border: 1px solid rgba(237, 28, 36, 0.4);
           }
+          @media (max-width: 600px) {
+            .day-cell {
+              min-height: 80px;
+              padding: 2px;
+            }
+            .date-num {
+              font-size: 0.7rem;
+              margin-bottom: 4px;
+              width: 18px;
+              height: 18px;
+            }
+            .event-poster {
+              width: 28px;
+              height: 42px;
+            }
+            .events {
+              gap: 12px 2px;
+            }
+            .badge {
+              width: 14px;
+              height: 14px;
+              font-size: 7px;
+              top: -4px;
+              right: -4px;
+            }
+            .type-badge {
+              font-size: 6px;
+              bottom: -10px;
+            }
+            .day-name {
+              font-size: 0.6rem;
+              padding: 4px 0;
+            }
+          }
         </style>
         <div class="tabs-container">
           <button class="tab-btn active" data-tab="trakt">🎬 Estrenos</button>
