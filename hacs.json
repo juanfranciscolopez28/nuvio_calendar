@@ -1,5 +1,7 @@
 {
   "name": "Nuvio Calendar",
   "render_readme": true,
-  "filename": "palantir-calendar.js"
+  "filename": "palantir-calendar.js",
+  "hide_default_branch": true,
+  "homeassistant": "2023.1.0"
 }

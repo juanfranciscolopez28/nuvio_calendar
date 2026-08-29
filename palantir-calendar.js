@@ -13,6 +13,13 @@ function esc(text) {
 // tarjeta, asi que los estrenos nuevos no aparecian hasta recargar Lovelace.
 const REFRESH_MS = 15 * 60 * 1000;
 
+// Se registra en la consola al cargar: HACS y el navegador cachean con ganas y
+// sin esto no hay manera de saber que version esta corriendo de verdad.
+const CARD_VERSION = "1.2.11";
+console.info(`%c NUVIO-CALENDAR %c v${CARD_VERSION} `,
+             'color:#fff;background:#ed1c24;font-weight:700',
+             'color:#ed1c24;background:#161b22');
+
 class PalantirCalendarCard extends HTMLElement {
   set hass(hass) {
     if (!this.content) {
