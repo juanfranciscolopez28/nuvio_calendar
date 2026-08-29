@@ -15,7 +15,7 @@ const REFRESH_MS = 15 * 60 * 1000;
 
 // Se registra en la consola al cargar: HACS y el navegador cachean con ganas y
 // sin esto no hay manera de saber que version esta corriendo de verdad.
-const CARD_VERSION = "1.3.0";
+const CARD_VERSION = "1.3.1";
 
 // Clave de dia en hora LOCAL. Antes se usaba d.toISOString(), que convierte la
 // medianoche local a UTC antes de sacar la fecha: en UTC+2 la casilla del 27
@@ -561,7 +561,13 @@ class PalantirCalendarCard extends HTMLElement {
         if (!grouped[key]) {
           grouped[key] = { ...ev, episodes: [ev] };
         } else {
-          grouped[key].episodes.push(ev);
+          // Sin esto, ver el mismo capitulo dos veces en el mismo dia local lo
+          // listaba dos veces: el servidor deduplica por dia UTC, y una sesion a
+          // la 01:00 y otra a las 13:00 (hora de aqui) caen en dias UTC distintos.
+          const yaEsta = grouped[key].episodes.some(
+            x => x.type === ev.type && x.season === ev.season
+                 && x.episode === ev.episode && x.title === ev.title);
+          if (!yaEsta) grouped[key].episodes.push(ev);
         }
       });
       
