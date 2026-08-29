@@ -1,3 +1,18 @@
+// Los titulos vienen de TMDb y Trakt y se insertan con innerHTML. Sin escapar,
+// un titulo con < o & rompe el render (y abre la puerta a inyectar marcado).
+function esc(text) {
+  return String(text == null ? '' : text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Cada cuanto se vuelven a pedir los eventos. Antes solo se pedian al crear la
+// tarjeta, asi que los estrenos nuevos no aparecian hasta recargar Lovelace.
+const REFRESH_MS = 15 * 60 * 1000;
+
 class PalantirCalendarCard extends HTMLElement {
   set hass(hass) {
     if (!this.content) {
@@ -399,6 +414,7 @@ class PalantirCalendarCard extends HTMLElement {
       this.currentDate = new Date();
       this.eventsData = [];
       this.fetchData();
+      this.startAutoRefresh();
     }
     
     // Update language if it changes
@@ -406,6 +422,29 @@ class PalantirCalendarCard extends HTMLElement {
       this.lang = hass.language || "es";
       this.fetchData();
     }
+  }
+
+  startAutoRefresh() {
+    this.stopAutoRefresh();
+    this._refreshTimer = setInterval(() => this.fetchData(), REFRESH_MS);
+  }
+
+  stopAutoRefresh() {
+    if (this._refreshTimer) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = null;
+    }
+  }
+
+  connectedCallback() {
+    if (this.content && !this._refreshTimer) {
+      this.fetchData();
+      this.startAutoRefresh();
+    }
+  }
+
+  disconnectedCallback() {
+    this.stopAutoRefresh();
   }
 
   setConfig(config) {
@@ -420,7 +459,21 @@ class PalantirCalendarCard extends HTMLElement {
 
   async fetchData() {
     try {
-      let url = `${this.config.url}/api/calendar/events.json?token=${this.config.token}&lang=${this.lang}`;
+      // El token va en la RUTA (/token_XXX/...), que es la forma que usa el resto
+      // del addon, en vez de como parametro de consulta.
+      // Salvo que lleve una barra: el servidor hace unquote de la ruta ANTES de
+      // extraer el token, asi que una barra (aunque vaya como %2F) parte la ruta
+      // y el token llega cortado. En ese caso se manda como parametro.
+      const base = String(this.config.url).replace(/\/+$/, '');
+      const token = String(this.config.token);
+      let url;
+      if (token.includes('/')) {
+        url = `${base}/api/calendar/events.json?token=${encodeURIComponent(token)}`
+            + `&lang=${encodeURIComponent(this.lang)}`;
+      } else {
+        url = `${base}/token_${encodeURIComponent(token)}`
+            + `/api/calendar/events.json?lang=${encodeURIComponent(this.lang)}`;
+      }
       if (this.config.trakt_user) {
         url += `&trakt_user=${encodeURIComponent(this.config.trakt_user)}`;
       }
@@ -429,7 +482,7 @@ class PalantirCalendarCard extends HTMLElement {
       this.eventsData = await res.json();
       this.renderCalendar();
     } catch (e) {
-      this.content.innerHTML = `<div class="loading" style="color: #ed1c24;">Error: ${e.message}</div>`;
+      this.content.innerHTML = `<div class="loading" style="color: #ed1c24;">Error: ${esc(e.message)}</div>`;
     }
   }
 
@@ -488,9 +541,13 @@ class PalantirCalendarCard extends HTMLElement {
       
       let eventsHtml = '<div class="events">';
       Object.values(grouped).forEach(ev => {
-        const bg = ev.poster_url ? `url(${ev.poster_url})` : '#30363d';
+        const bg = ev.poster_url
+          ? `url("${String(ev.poster_url).replace(/["\\]/g, '')}")`
+          : '#30363d';
         const badgeHtml = ev.episodes && ev.episodes.length > 1 ? `<div class="badge">${ev.episodes.length}</div>` : '';
-        const tooltipText = ev.episodes ? ev.episodes.map(e => e.title).join('<br>') : ev.title;
+        const tooltipText = ev.episodes
+          ? ev.episodes.map(e => esc(e.title)).join('<br>')
+          : esc(ev.title);
         
         const typeBadgeHtml = ev.type === 'movie' ? `<div class="type-badge">PELI</div>` : `<div class="type-badge">SERIE</div>`;
         const groupHasLinks = ev.episodes ? ev.episodes.some(e => e.has_links) : ev.has_links;
@@ -503,7 +560,7 @@ class PalantirCalendarCard extends HTMLElement {
           <div class="event-poster ${availabilityClass}" style="background-image: ${bg}" data-event="${evJson}">
             ${typeBadgeHtml}
             ${badgeHtml}
-            <div class="tooltip">${tooltipText.replace(/"/g, '&quot;')}</div>
+            <div class="tooltip">${tooltipText}</div>
           </div>
         `;
       });
@@ -559,7 +616,7 @@ class PalantirCalendarCard extends HTMLElement {
             
         listHtml += `
           <li class="modal-item">
-            <span class="item-title">${item.title}</span>
+            <span class="item-title">${esc(item.title)}</span>
             ${statusHtml}
           </li>
         `;
