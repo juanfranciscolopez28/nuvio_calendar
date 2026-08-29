@@ -15,7 +15,14 @@ const REFRESH_MS = 15 * 60 * 1000;
 
 // Se registra en la consola al cargar: HACS y el navegador cachean con ganas y
 // sin esto no hay manera de saber que version esta corriendo de verdad.
-const CARD_VERSION = "1.2.12";
+const CARD_VERSION = "1.3.0";
+
+// Clave de dia en hora LOCAL. Antes se usaba d.toISOString(), que convierte la
+// medianoche local a UTC antes de sacar la fecha: en UTC+2 la casilla del 27
+// buscaba eventos del 26 y todo salia un dia mas tarde.
+function localDayKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 console.info(`%c NUVIO-CALENDAR %c v${CARD_VERSION} `,
              'color:#fff;background:#ed1c24;font-weight:700',
              'color:#ed1c24;background:#161b22');
@@ -516,6 +523,19 @@ class PalantirCalendarCard extends HTMLElement {
     let html = '';
     const today = new Date();
 
+    // Se agrupan los eventos por dia local una sola vez. Antes se comparaba el
+    // texto del timestamp con startsWith en cada una de las 42 casillas, lo que
+    // ademas de ser 42xN ignoraba por completo la zona horaria del evento.
+    const byDay = {};
+    this.eventsData
+      .filter(e => e.source === this.activeTab && e.timestamp)
+      .forEach(e => {
+        const dt = new Date(e.timestamp);
+        if (isNaN(dt.getTime())) return;
+        const k = localDayKey(dt);
+        (byDay[k] = byDay[k] || []).push(e);
+      });
+
     for (let i = 0; i < 42; i++) {
       let d, isCurrentMonth = false;
       if (i < offset) {
@@ -527,11 +547,10 @@ class PalantirCalendarCard extends HTMLElement {
         d = new Date(year, month + 1, i - offset - daysInMonth + 1);
       }
 
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = localDayKey(d);
       const isToday = isCurrentMonth && d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
       
-      const filteredData = this.eventsData.filter(e => e.source === this.activeTab);
-      const dayEvents = filteredData.filter(e => e.timestamp && e.timestamp.startsWith(dateStr));
+      const dayEvents = byDay[dateStr] || [];
       
       const grouped = {};
       dayEvents.forEach(ev => {
