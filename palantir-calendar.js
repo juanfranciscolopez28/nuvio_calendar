@@ -15,7 +15,7 @@ const REFRESH_MS = 15 * 60 * 1000;
 
 // Se registra en la consola al cargar: HACS y el navegador cachean con ganas y
 // sin esto no hay manera de saber que version esta corriendo de verdad.
-const CARD_VERSION = "1.2.11";
+const CARD_VERSION = "1.2.12";
 console.info(`%c NUVIO-CALENDAR %c v${CARD_VERSION} `,
              'color:#fff;background:#ed1c24;font-weight:700',
              'color:#ed1c24;background:#161b22');
@@ -548,8 +548,11 @@ class PalantirCalendarCard extends HTMLElement {
       
       let eventsHtml = '<div class="events">';
       Object.values(grouped).forEach(ev => {
+        // Comillas SIMPLES dentro del url(): este valor acaba en un atributo
+        // style="..." delimitado por comillas dobles, asi que una comilla doble
+        // aqui cierra el atributo y el navegador se come el resto del tag.
         const bg = ev.poster_url
-          ? `url("${String(ev.poster_url).replace(/["\\]/g, '')}")`
+          ? `url('${String(ev.poster_url).replace(/['"\\)\s]/g, '')}')`
           : '#30363d';
         const badgeHtml = ev.episodes && ev.episodes.length > 1 ? `<div class="badge">${ev.episodes.length}</div>` : '';
         const tooltipText = ev.episodes
